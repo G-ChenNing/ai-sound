@@ -15,6 +15,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 import org.apache.http.util.EntityUtils;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 import java.security.cert.CertificateException;
@@ -27,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+@Component
 public class SendSms {
 
     //无需修改,用于格式化鉴权头域,给"X-WSSE"参数赋值
@@ -34,7 +36,7 @@ public class SendSms {
     //无需修改,用于格式化鉴权头域,给"Authorization"参数赋值
     private static final String AUTH_HEADER_VALUE = "WSSE realm=\"SDP\",profile=\"UsernameToken\",type=\"Appkey\"";
 
-    public static void main(String[] args) throws Exception{
+    public static void send(String phone,String code) throws Exception{
 
         //必填,请参考"开发准备"获取如下数据,替换为实际值
         String url = "https://api.rtc.huaweicloud.com:10443/sms/batchSendSms/v1"; //APP接入地址+接口访问URI
@@ -48,7 +50,8 @@ public class SendSms {
         String signature = "北京良业环境"; //签名名称
 
         //必填,全局号码格式(包含国家码),示例:+861512345678a9,多个号码之间用英文逗号分隔
-        String receiver = "+8618658033898,+8617319431736"; //短信接收人号码
+//        String receiver = "+8618658033898,+8617319431736"; //短信接收人号码
+        String receiver = "+86"+phone; //短信接收人号码
 
         //选填,短信状态报告接收地址,推荐使用域名,为空或者不填表示不接收状态报告
         String statusCallBack = "";
@@ -60,7 +63,7 @@ public class SendSms {
          * 模板中的每个变量都必须赋值，且取值不能为空
          * 查看更多模板和变量规范:产品介绍>模板和变量规范
          */
-        String templateParas = "[\"666666\"]"; //模板变量，此处以单变量验证码短信为例，请客户自行生成6位验证码，并定义为字符串类型，以杜绝首位0丢失的问题（例如：002569变成了2569）。
+        String templateParas = "[\""+code+"\"]"; //模板变量，此处以单变量验证码短信为例，请客户自行生成6位验证码，并定义为字符串类型，以杜绝首位0丢失的问题（例如：002569变成了2569）。
 
         //请求Body,不携带签名名称时,signature请填null
         String body = buildRequestBody(sender, receiver, templateId, templateParas, statusCallBack, signature);
