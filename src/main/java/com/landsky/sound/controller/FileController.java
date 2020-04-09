@@ -46,6 +46,10 @@ public class FileController {
         if (one.getActived() == 0) {
             return ResultWrapper.failure().message("账号未激活");
         }
+        int count = userService.count(queryWrapper);
+        if (count > 1000) {
+            return ResultWrapper.failure().message("最多1000条");
+        }
         String fileName = openid + "-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + "-" + UUID.randomUUID() + "-" + file.getOriginalFilename();
         PutObjectResult putObjectResult = ApplicationInit.getObsClient()
                 .putObject("obs-for-ai-livius", fileName, new ByteArrayInputStream(file.getBytes()));
