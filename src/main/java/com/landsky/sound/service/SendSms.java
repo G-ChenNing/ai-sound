@@ -36,7 +36,7 @@ public class SendSms {
     //无需修改,用于格式化鉴权头域,给"Authorization"参数赋值
     private static final String AUTH_HEADER_VALUE = "WSSE realm=\"SDP\",profile=\"UsernameToken\",type=\"Appkey\"";
 
-    public static void send(String phone,String code) throws Exception{
+    public void send(String phone,String code) throws Exception{
 
         //必填,请参考"开发准备"获取如下数据,替换为实际值
         String url = "https://api.rtc.huaweicloud.com:10443/sms/batchSendSms/v1"; //APP接入地址+接口访问URI

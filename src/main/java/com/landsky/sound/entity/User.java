@@ -25,8 +25,7 @@ public class User extends BaseEntity {
 
     private String code;
 
-    @TableLogic
-    private Boolean actived;
+    private Integer actived;
 
     private Integer count;
 
