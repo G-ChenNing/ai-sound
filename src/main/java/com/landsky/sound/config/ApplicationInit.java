@@ -1,6 +1,7 @@
 package com.landsky.sound.config;
 
 import com.landsky.sound.thread.ChiefCustomThreadFactory;
+import com.landsky.sound.utils.Token;
 import com.obs.services.ObsClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +19,12 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @Order(value = 10)
-
 public class ApplicationInit implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInit.class);
-//    private static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(2, new ChiefCustomThreadFactory(), new ThreadPoolExecutor.DiscardOldestPolicy());
+    private static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(2, new ChiefCustomThreadFactory(), new ThreadPoolExecutor.DiscardOldestPolicy());
     private static ObsClient obsClient;
-
+    private Token tokenUtil = new Token();
+    private static String token;
     @Override
     public void run(String... args) {
         String endPoint = "obs.cn-east-3.myhuaweicloud.com";
@@ -31,10 +32,17 @@ public class ApplicationInit implements CommandLineRunner {
         String sk = "MGYq97cUeQY9jBa6P6Nk2uTOdW71ZK9hKmN1i0kE";
 // 创建ObsClient实例
         obsClient = new ObsClient(ak, sk, endPoint);
+        timer.scheduleAtFixedRate(() -> {
+            token  = this.tokenUtil.getToken();
+        }, 0, 8, TimeUnit.HOURS);
     }
 
     public static ObsClient getObsClient() {
         return obsClient;
+    }
+
+    public static String getToken() {
+        return token;
     }
 
     @PreDestroy

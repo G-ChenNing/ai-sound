@@ -10,10 +10,7 @@ import com.landsky.sound.service.IUserService;
 import com.landsky.sound.service.SendSms;
 import com.obs.services.model.PutObjectResult;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -24,6 +21,7 @@ import java.util.Random;
 import java.util.UUID;
 
 @RestController
+@CrossOrigin(origins = "*", maxAge = 3600)
 //@RequestMapping("/file")
 public class FileController {
     private String folder = "D:\\workspace\\sound\\src\\main\\java\\com\\landsky\\sound\\controller";
@@ -90,7 +88,7 @@ public class FileController {
             String rand = String.valueOf(random.nextInt(10));
             sRand += rand;
         }
-
+        User user = new User();
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("openid", openid);
         User one = userService.getOne(queryWrapper);
@@ -107,7 +105,7 @@ public class FileController {
             userService.updateById(one);
             return ResultWrapper.failure().message("请输入验证码");
         }
-        User user = new User();
+
         user.setCode(sRand);
         user.setPhone(phone);
         user.setOpenid(openid);
