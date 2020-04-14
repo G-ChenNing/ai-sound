@@ -23,7 +23,7 @@ public class ApplicationInit implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInit.class);
     private static final ScheduledExecutorService timer = new ScheduledThreadPoolExecutor(2, new ChiefCustomThreadFactory(), new ThreadPoolExecutor.DiscardOldestPolicy());
     private static ObsClient obsClient;
-    private Token tokenUtil = new Token();
+    private static Token tokenUtil = new Token();
     private static String token;
     @Override
     public void run(String... args) {
@@ -33,8 +33,8 @@ public class ApplicationInit implements CommandLineRunner {
 // 创建ObsClient实例
         obsClient = new ObsClient(ak, sk, endPoint);
         timer.scheduleAtFixedRate(() -> {
-            token  = this.tokenUtil.getToken();
-        }, 0, 8, TimeUnit.HOURS);
+            token  = tokenUtil.getToken();
+        }, 0, 100, TimeUnit.MINUTES);
     }
 
     public static ObsClient getObsClient() {
@@ -43,6 +43,10 @@ public class ApplicationInit implements CommandLineRunner {
 
     public static String getToken() {
         return token;
+    }
+
+    public static void refreshToken() {
+        token  = tokenUtil.getToken();
     }
 
     @PreDestroy

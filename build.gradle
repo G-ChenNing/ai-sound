@@ -15,6 +15,7 @@ configurations {
 }
 
 repositories {
+    mavenCentral()
     maven {
         url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
@@ -35,7 +36,7 @@ repositories {
     maven {url "https://maven.aliyun.com/repository/grails-core"}
     maven {url "https://maven.aliyun.com/repository/mapr-public"}
     maven {url "https://maven.aliyun.com/repository/apache-snapshots"}
-    mavenCentral()
+
 }
 
 dependencies {
@@ -68,8 +69,8 @@ dependencies {
     testCompile group: 'com.github.tomakehurst', name: 'wiremock', version: '2.26.3', ext: 'pom'
 //    compile 'junit:junit:4.12'
 // https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
-    testCompile group: 'org.junit.platform', name: 'junit-platform-launcher', version: '1.6.1'
-
+//    testCompile group: 'org.junit.platform', name: 'junit-platform-launcher', version: '1.6.1'
+    implementation 'com.github.dadiyang:jave:1.0.5'
 
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'mysql:mysql-connector-java'

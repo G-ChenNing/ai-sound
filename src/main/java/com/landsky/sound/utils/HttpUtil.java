@@ -1,6 +1,10 @@
 package com.landsky.sound.utils;
 
 
+import com.alibaba.fastjson.JSONObject;
+import com.landsky.sound.config.ApplicationInit;
+import it.sauronsoftware.jave.AudioUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
@@ -32,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class HttpUtil {
-
+    public static final int cache = 10 * 1024;
     private static final Logger logger = LoggerFactory.getLogger(HttpUtil.class);
     private static final int CONNECT_TIMEOUT = 30000;// 设置连接建立的超时时间为10s
     protected static final Integer SOCKET_TIMEOUT = 30000;
@@ -50,7 +54,8 @@ public class HttpUtil {
     private static CloseableHttpClient httpClient; // 发送请求的客户端单例
     private static PoolingHttpClientConnectionManager manager; //连接池管理类
     private static CookieStore cookieStore = new BasicCookieStore();
-    private static void setRequestConfig(HttpRequestBase httpRequestBase){
+
+    private static void setRequestConfig(HttpRequestBase httpRequestBase) {
         RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(CONNECT_TIMEOUT)
                 .setConnectTimeout(CONNECT_TIMEOUT)
                 .setSocketTimeout(SOCKET_TIMEOUT).build();
@@ -59,30 +64,31 @@ public class HttpUtil {
     }
 
 
-
-    private static IdleConnectionMonitorThread mointor;//监视并回收过期连接
+    //    private static IdleConnectionMonitorThread mointor;//监视并回收过期连接
     static {
         manager = new PoolingHttpClientConnectionManager();
         manager.setMaxTotal(200);
         manager.setDefaultMaxPerRoute(100);
-        mointor = new IdleConnectionMonitorThread(manager);
+//        mointor = new IdleConnectionMonitorThread(manager);
         try {
             httpClient = createHttpClient();
-            mointor.start();//如果createHttpClient失败 就没必要启动监视失效连接
-        }catch (Exception e){
-            logger.error("error==>",e);
+//            mointor.start();//如果createHttpClient失败 就没必要启动监视失效连接
+        } catch (Exception e) {
+            logger.error("error==>", e);
         }
     }
+
     /**
      * 根据host和port构建httpclient实例
+     *
      * @return
      */
-    public static CloseableHttpClient createHttpClient() throws Exception{
+    public static CloseableHttpClient createHttpClient() throws Exception {
         if (httpClient == null) {
             ConnectionSocketFactory plainSocketFactory = PlainConnectionSocketFactory.getSocketFactory();
             SSLContext sslContext = (new SSLContextBuilder()).loadTrustMaterial(null, (TrustStrategy) (chain, authType) -> true).build();
-            LayeredConnectionSocketFactory sslSocketFactory =  new SSLConnectionSocketFactory(sslContext, (hostname, session) -> true);
-            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create().register("http", plainSocketFactory)
+            LayeredConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, (hostname, session) -> true);
+            Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create().register("http", plainSocketFactory)
                     .register("https", sslSocketFactory).build();
 
             manager = new PoolingHttpClientConnectionManager(registry);
@@ -94,7 +100,8 @@ public class HttpUtil {
         }
         return httpClient;
     }
-    public static String doPost(String url, String jsonText){
+
+    public static String doPost(String url, String jsonText) {
         HttpPost post = new HttpPost(url);
         String result = "";
         CloseableHttpResponse res = null;
@@ -104,53 +111,53 @@ public class HttpUtil {
                 post.setEntity(entity);
             }
             setRequestConfig(post);
-            res = httpClient.execute(post);
+            res = createHttpClient().execute(post);
             result = IOUtils.toString(res.getEntity().getContent(), CharacterConstant.UTF_8);
-        }catch (Exception e){
-            logger.error("error==>{}",e);
-        }finally {
-            if(null!=res) {
+        } catch (Exception e) {
+            logger.error("error==>{}", e);
+        } finally {
+            if (null != res) {
                 try {
                     res.close();
                 } catch (IOException e) {
-                    logger.error("error==>{}",e);
+                    logger.error("error==>{}", e);
                 }
             }
         }
         return result;
     }
 
-    public static String doPostForm(String url, Map<String,String> params){
+    public static String doPostForm(String url, Map<String, String> params) {
         HttpPost post = new HttpPost(url);
         String result = "";
         CloseableHttpResponse res = null;
         try {
             List<NameValuePair> paramList = new ArrayList<NameValuePair>();
-            if(params != null && params.size() > 0){
+            if (params != null && params.size() > 0) {
                 Set<String> keySet = params.keySet();
-                for(String key : keySet) {
+                for (String key : keySet) {
                     paramList.add(new BasicNameValuePair(key, params.get(key)));
                 }
             }
-            post.setEntity(new UrlEncodedFormEntity(paramList,"UTF-8"));
+            post.setEntity(new UrlEncodedFormEntity(paramList, "UTF-8"));
             setRequestConfig(post);
-            res = httpClient.execute(post);
+            res = createHttpClient().execute(post);
             result = IOUtils.toString(res.getEntity().getContent(), CharacterConstant.UTF_8);
-        }catch (Exception e){
-            logger.error("error==>{}",e);
-        }finally {
-            if(null!=res) {
+        } catch (Exception e) {
+            logger.error("error==>{}", e);
+        } finally {
+            if (null != res) {
                 try {
                     res.close();
                 } catch (IOException e) {
-                    logger.error("error==>{}",e);
+                    logger.error("error==>{}", e);
                 }
             }
         }
         return result;
     }
 
-    public static void wrapCookie(Cookie cookie){
+    public static void wrapCookie(Cookie cookie) {
         cookieStore.addCookie(cookie);
     }
 
@@ -164,19 +171,45 @@ public class HttpUtil {
         CloseableHttpResponse res = null;
         try {
             setRequestConfig(get);
-            res = httpClient.execute(get);
+            res = createHttpClient().execute(get);
             result = IOUtils.toString(res.getEntity().getContent(), CharacterConstant.UTF_8);
-        } catch (Exception e){
-            logger.error("error==>{}",e);
+        } catch (Exception e) {
+            logger.error("error==>{}", e);
         } finally {
             if (url.startsWith(CharacterConstant.HTTPS) && httpClient != null && httpClient instanceof CloseableHttpClient) {
-                httpClient.close();
+                //httpClient.close();
             }
             res.close();
         }
         return result;
     }
-    public static List<Cookie> fetchCookie(String url){
+
+    public static byte[] doGetFile(String url) throws Exception {
+        HttpGet get = new HttpGet(url);
+        String result = "";
+        CloseableHttpResponse res = null;
+        try {
+            setRequestConfig(get);
+            res = createHttpClient().execute(get);
+//            byte[] bytes = ImageUtil.readInputStream(res.getEntity().getContent());
+            return ImageUtil.readInputStream(res.getEntity().getContent());
+//            result = IOUtils.toString(res.getEntity().getContent(), CharacterConstant.UTF_8);
+        } catch (Exception e) {
+            logger.error("error==>{}", e);
+        } finally {
+            if (res != null) {
+                res.close();
+            }
+            if (url.startsWith(CharacterConstant.HTTPS) && httpClient != null && httpClient instanceof CloseableHttpClient) {
+                //httpClient.close();
+            }
+
+        }
+        return null;
+    }
+
+
+    public static List<Cookie> fetchCookie(String url) {
         HttpGet get = new HttpGet(url);
         CloseableHttpResponse res = null;
         try {
@@ -185,39 +218,38 @@ public class HttpUtil {
             setRequestConfig(get);
             res = httpClient.execute(get);
             return cookieStore.getCookies();
-        } catch (Exception e){
-            logger.error("error==>{}",e);
+        } catch (Exception e) {
+            logger.error("error==>{}", e);
         } finally {
-            try{
+            try {
                 if (url.startsWith(CharacterConstant.HTTPS) && httpClient != null && httpClient instanceof CloseableHttpClient) {
-                    httpClient.close();
+                    //httpClient.close();
                 }
-                if(null!=res)
-                res.close();
-            }catch (Exception e){
-                logger.error("error==>{}",e);
+                if (null != res)
+                    res.close();
+            } catch (Exception e) {
+                logger.error("error==>{}", e);
             }
         }
         return null;
     }
 
 
-
-    public static String doGetImage(String url) throws Exception{
+    public static String doGetImage(String url) throws Exception {
         HttpGet get = new HttpGet(url);
         String result = "";
         CloseableHttpResponse res = null;
         try {
             setRequestConfig(get);
-            res = httpClient.execute(get);
+            res = createHttpClient().execute(get);
             HttpEntity entity = res.getEntity();
             byte[] bytes = ImageUtil.readInputStream(entity.getContent());
             result = Base64Util.encode(bytes);
-        }catch (Exception e){
-            logger.error("error==>{}",e);
+        } catch (Exception e) {
+            logger.error("error==>{}", e);
         } finally {
-           if(null!=res)
-           res.close();
+            if (null != res)
+                res.close();
         }
         return result;
     }
@@ -246,7 +278,7 @@ public class HttpUtil {
                     }
                 }
             } catch (InterruptedException ex) {
-                logger.error("error==>{}",ex);
+                logger.error("error==>{}", ex);
             }
         }
 
@@ -258,4 +290,51 @@ public class HttpUtil {
         }
 
     }
+
+//, String picPath
+    public static String saveImageToDisk(String accessToken, String mediaId, String picName)
+            throws Exception {
+        String url = "https://api.weixin.qq.com/cgi-bin/media/get?access_token=" + accessToken + "&media_id=" + mediaId;
+
+        byte[] data = doGetFile(url);
+        if (data == null) {
+            return "data null";
+        }
+//        if (picPath == null || picName.isEmpty()) {
+//            picPath = "\\mp3\\";
+//        }
+//        String filePath = picPath + picName;
+//        String filePathAMR = filePath + ".amr";
+//        String filePathMP3 = filePath + ".mp3";
+        String filePathAMR = picName + ".amr";
+        String filePathMP3 = picName + ".mp3";
+//        byte[] data = new byte[1024000];
+        int len = data.length;
+        if (len < 200) {
+            String s = IOUtils.toString(data, CharacterConstant.UTF_8);
+            logger.info("打印下载文件异常：" + s);
+            ApplicationInit.refreshToken();
+            return JSONObject.parseObject(s).getString("errcode");
+        }
+        FileOutputStream fileOutputStream = null;
+        try {
+            fileOutputStream = new FileOutputStream(filePathAMR);
+//            while ((len = inputStream.read(data)) != -1) {
+            fileOutputStream.write(data, 0, len);
+//            }
+        } catch (IOException e) {
+            return "file write error";
+        }
+//        finally {
+//
+//        }
+        //生成对应mp3格式
+        File source = new File(filePathAMR);
+        File target = new File(filePathMP3);
+        AudioUtils.amrToMp3(source, target);
+//            ChangeAudioFormat.changeToMp3(filePath, picPath+picName+".mp3");
+        return "success";
+    }
 }
+
+

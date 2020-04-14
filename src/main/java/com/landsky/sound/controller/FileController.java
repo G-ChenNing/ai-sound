@@ -8,13 +8,16 @@ import com.landsky.sound.entity.User;
 import com.landsky.sound.service.IOBSService;
 import com.landsky.sound.service.IUserService;
 import com.landsky.sound.service.SendSms;
+import com.landsky.sound.utils.HttpUtil;
 import com.obs.services.model.PutObjectResult;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
@@ -22,6 +25,7 @@ import java.util.UUID;
 
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
+@Slf4j
 //@RequestMapping("/file")
 public class FileController {
     private String folder = "D:\\workspace\\sound\\src\\main\\java\\com\\landsky\\sound\\controller";
@@ -34,10 +38,7 @@ public class FileController {
     private IOBSService iobsService;
 
     @PostMapping("/file")
-    public ResultWrapper upload(MultipartFile file, @RequestParam String openid) throws IOException {
-        if (file == null) {
-            return ResultWrapper.failure().message("请上传文件");
-        }
+    public ResultWrapper upload(@RequestParam String mediaId, @RequestParam String openid) throws Exception {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("openid", openid);
         User one = userService.getOne(queryWrapper);
@@ -48,9 +49,25 @@ public class FileController {
         if (count > 1000) {
             return ResultWrapper.failure().message("最多1000条");
         }
-        String fileName = openid + "-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + "-" + UUID.randomUUID() + "-" + file.getOriginalFilename();
-        PutObjectResult putObjectResult = ApplicationInit.getObsClient()
-                .putObject("obs-for-ai-livius", fileName, new ByteArrayInputStream(file.getBytes()));
+        String fileName = openid + "-" + mediaId + "-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + "-" + UUID.randomUUID();
+        String s = HttpUtil.saveImageToDisk(ApplicationInit.getToken(), mediaId, fileName);
+        log.error("下载文件返回" + s);
+        int index = 0;
+        while ((!s.equals("success")) && index < 2) {
+            s = HttpUtil.saveImageToDisk(ApplicationInit.getToken(), mediaId, fileName);
+            index++;
+        }
+        if (!s.equals("success")) {
+            return ResultWrapper.failure().message("文件下载服务器失败");
+        }
+        File file = new File(fileName + ".mp3");
+        PutObjectResult putObjectResult = null;
+        try (InputStream inputStream = new FileInputStream(file);) {
+            putObjectResult = ApplicationInit.getObsClient()
+                    .putObject("obs-for-ai-livius", fileName+".mp3", new ByteArrayInputStream(IOUtils.toByteArray(inputStream)));
+        }
+
+
         OBS obs = new OBS();
         obs.setBucket_name(putObjectResult.getBucketName());
         obs.setEtag(putObjectResult.getEtag());
