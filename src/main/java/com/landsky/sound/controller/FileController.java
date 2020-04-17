@@ -29,7 +29,7 @@ import java.util.UUID;
 //@RequestMapping("/file")
 public class FileController {
     private String folder = "D:\\workspace\\sound\\src\\main\\java\\com\\landsky\\sound\\controller";
-    public static final String REGEX_MOBILE = "^((13[0-9])|(14[5|7])|(15([0-3]|[5-9]))|(17[013678])|(18[0,5-9]))\\d{8}$";
+    public static final String REGEX_MOBILE = "^((13[0-9])|(14[5|7])|(15([0-3]|[5-9]))|(17[013678])|(18[0,5-9])|(19[0-9]))\\d{8}$";
     @Autowired
     private SendSms sendSms;
     @Autowired
@@ -77,6 +77,9 @@ public class FileController {
         obs.setObjectUrl(putObjectResult.getObjectUrl());
         obs.setCreateTime(LocalDateTime.now());
         iobsService.save(obs);
+        file.delete();
+        File fileAmr = new File(fileName + ".amr");
+        fileAmr.delete();
         return ResultWrapper.success().object(putObjectResult);
     }
 
